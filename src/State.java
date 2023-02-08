@@ -1,13 +1,21 @@
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class State {
 	int[] table;
 	int zero;
 	int direction;
-	public State(int[] t, int d) {
+	List<State> history;
+	public State(int [] t) {
+		this(t, 10, null);
+	}
+	public State(int[] t, int d, List<State> l) {
 		table=t;
 		zero = indexOfZero();
 		direction = d;
+		history = l==null ? new ArrayList<State>() : new ArrayList<State>(l);
+		history.add(this);
 	}
 	public int indexOfZero() {
 		for(int i = 0; i != table.length; i++) {
@@ -24,29 +32,30 @@ public class State {
 		
 		switch(dir) {
 			case 0: //UP
-				return zero-3 < 0 ? null : new State(trade(zero, zero - 3), 0);
+				return new State(trade(zero, zero - 3), 0, history);
 			case 1: //RIGHT
-				return zero==2 || zero==5 || zero==8 ? null : new State(trade(zero, zero + 1), 1);
+				return new State(trade(zero, zero + 1), 1, history);
 			case 2: //DOWN
-				return zero+3 > 8 ? null : new State(trade(zero, zero + 3), 2);
+				return new State(trade(zero, zero + 3), 2, history);
 			case 3: //LEFT
-				return zero==0 || zero==3 || zero==6 ? null : new State(trade(zero, zero -1), 3);
+				return new State(trade(zero, zero -1),  3, history);
 		}
 		return null;
 		
 	}
 	
-	public int oppDirection() {
-		switch(direction) {
-		case 0: return 2;
-		case 1: return 3;
-		case 2: return 0;
-		case 3: return 1;
+	public boolean inBounds(int dir) {
+		switch(dir) {
+		case 0: return zero-3>=0;
+		case 1: return (zero-2)%3 != 0;
+		case 2: return zero+3 <= 8;
+		case 3: return zero%3 != 0;
 		}
-		return -1;
+		return false;
 	}
-	public int[] getTable() {return table;}
-	
+	public int oppDirection() {
+		return direction < 2 ? 2+direction : direction-2;
+	}
 	public int[] trade(int a, int b){
 		int[] temptable = Arrays.copyOf(table, table.length);
 		temptable[a] = table[b];
@@ -60,19 +69,23 @@ public class State {
 		for(int i = 0 ; i<table.length; i+=3) {
 			str+=String.format("%d%d%d\n", table[i], table[i+1], table[i+2]);
 		}
-		return str;
-				
+		return str;		
 	}
-	
-	public State[] possibleMoves() {
-		State[] res = new State[4];
+	public List<State> possibleMoves() {
+		List<State> res = new ArrayList<State>();
 		for(int i = 0; i!= 4; i++) {
-			if(i != oppDirection()) {
-				res[i] = moveTo(i);
-			}else {
-				res[i] = null;
+			if(i!=oppDirection() && inBounds(i)) {
+				res.add(moveTo(i));
 			}
 		}
 		return res;
+	}
+	
+	public String getHistory() {
+		String str = "";
+		for(State s : history) {
+			str+=s.toString() + "\n";
+		}
+		return str;
 	}
 }
